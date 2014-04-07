@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!-- saved from url=(0060)http://www.mitchr.me/SS/exampleCode/AUPG/pcre_example.c.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>AUPG/pcre_example.c</title>
+<style type="text/css"></style></head>
+<body bgcolor="#FFFFFF" text="#000000" link="#1F00FF" alink="#FF0000" vlink="#9900DD">
+<a name="top"> </a>
+<a name="file1"> </a>
+<h1><a href="http://www.mitchr.me/SS/exampleCode/AUPG/pcre_example.c">pcre_example.c</a></h1>
+
+<pre><i><font color="#B22222">/** 
+   @file      pcre_example.c
+   @author    Mitch Richling &lt;http://www.mitchr.me/&gt;
+   @Copyright Copyright 1994,1998 by Mitch Richling.  All rights reserved.
+   @brief     UNIX regex tools@EOL
+   @Keywords  UNIX regular expressions regex perl pcre
+   @Std       ISOC POSIX.2 (IEEE Std 103.2) BSD4.3 
+
+              This is an example program intended to illustrate very
+              basic use of the PCRE regular expression library.  PCRE
+              is NOT part of any UNIX or language standard; however,
+              it is commonly found on UNIX systems today, and it has a
+              compatibility mode that supports the standard
+              interfaces.
+
+              The vast irregularities found in various UNIX favors
+              with regard to regular expression support can make using
+              regular expressions frustrating.  It can be less
+              difficult, and safer, to simply carry around a regular
+              expression library with you!  PCRE is by far the most
+              popular, "alternate", regular expression library
+              available today.  It makes a fine choice for the budding
+              UNIX programmer unwilling to explore the vulgarities of
+              some operating system vendor's regular expression
+              library.  If you are a C++ programmer, another good
+              alternative may be found as part of the BOOST library.
+
+              Note: This program is very similar to the
+              regex_example.c example found in this directory.
+
+   @Tested    
+              - Solaris 2.8
+              - MacOS X.2
+              - Linux (RH 7.3)
+ */</font></i>
+
+#<b><font color="#5F9EA0">include</font></b> <b><font color="#BC8F8F">&lt;pcre.h&gt;</font></b>               <i><font color="#B22222">/* PCRE lib        NONE  */</font></i>
+#<b><font color="#5F9EA0">include</font></b> <b><font color="#BC8F8F">&lt;stdio.h&gt;</font></b>              <i><font color="#B22222">/* I/O lib         C89   */</font></i>
+#<b><font color="#5F9EA0">include</font></b> <b><font color="#BC8F8F">&lt;stdlib.h&gt;</font></b>             <i><font color="#B22222">/* Standard Lib    C89   */</font></i>
+#<b><font color="#5F9EA0">include</font></b> <b><font color="#BC8F8F">&lt;string.h&gt;</font></b>             <i><font color="#B22222">/* Strings         C89   */</font></i>
+
+<b><font color="#228B22">int</font></b> <b><font color="#0000FF">main</font></b>(<b><font color="#228B22">int</font></b> argc, <b><font color="#228B22">char</font></b> *argv[]);
+
+<b><font color="#228B22">int</font></b> <b><font color="#0000FF">main</font></b>(<b><font color="#228B22">int</font></b> argc, <b><font color="#228B22">char</font></b> *argv[]) {
+  pcre *reCompiled;
+  pcre_extra *pcreExtra;
+  <b><font color="#228B22">int</font></b> pcreExecRet;
+  <b><font color="#228B22">int</font></b> subStrVec[30];
+  <b><font color="#228B22">const</font></b> <b><font color="#228B22">char</font></b> *pcreErrorStr;
+  <b><font color="#228B22">int</font></b> pcreErrorOffset;
+  <b><font color="#228B22">char</font></b> *aStrRegex;
+  <b><font color="#228B22">char</font></b> **aLineToMatch;
+  <b><font color="#228B22">const</font></b> <b><font color="#228B22">char</font></b> *psubStrMatchStr;
+  <b><font color="#228B22">int</font></b> j;
+  <b><font color="#228B22">char</font></b> *testStrings[] = { <b><font color="#BC8F8F">"This should match... hello"</font></b>,
+                          <b><font color="#BC8F8F">"This could match... hello!"</font></b>,
+                          <b><font color="#BC8F8F">"More than one hello.. hello"</font></b>,
+                          <b><font color="#BC8F8F">"No chance of a match..."</font></b>,
+                          NULL};
+
+
+  aStrRegex = <b><font color="#BC8F8F">"(.*)(hello)+"</font></b>;  
+  printf(<b><font color="#BC8F8F">"Regex to use: %s\n"</font></b>, aStrRegex);
+
+  <i><font color="#B22222">// First, the regex string must be compiled.
+</font></i>  reCompiled = pcre_compile(aStrRegex, 0, &amp;pcreErrorStr, &amp;pcreErrorOffset, NULL);
+
+  <i><font color="#B22222">/* OPTIONS (second argument) (||'ed together) can be:
+       PCRE_ANCHORED       -- Like adding ^ at start of pattern.
+       PCRE_CASELESS       -- Like m//i
+       PCRE_DOLLAR_ENDONLY -- Make $ match end of string regardless of \n's
+                              No Perl equivalent.
+       PCRE_DOTALL         -- Makes . match newlins too.  Like m//s
+       PCRE_EXTENDED       -- Like m//x
+       PCRE_EXTRA          -- 
+       PCRE_MULTILINE      -- Like m//m
+       PCRE_UNGREEDY       -- Set quantifiers to be ungreedy.  Individual quantifiers
+                              may be set to be greedy if they are followed by "?".
+       PCRE_UTF8           -- Work with UTF8 strings.
+  */</font></i>
+
+  <i><font color="#B22222">// pcre_compile returns NULL on error, and sets pcreErrorOffset &amp; pcreErrorStr
+</font></i>  <b><font color="#A020F0">if</font></b>(reCompiled == NULL) {
+    printf(<b><font color="#BC8F8F">"ERROR: Could not compile '%s': %s\n"</font></b>, aStrRegex, pcreErrorStr);
+    exit(1);
+  } <i><font color="#B22222">/* end if */</font></i>
+
+  <i><font color="#B22222">// Optimize the regex
+</font></i>  pcreExtra = pcre_study(reCompiled, 0, &amp;pcreErrorStr);
+
+  <i><font color="#B22222">/* pcre_study() returns NULL for both errors and when it can not optimize
+     the regex.  The last argument is how one checks for errors (it is NULL
+     if everything works, and points to an error string otherwise. */</font></i>
+  <b><font color="#A020F0">if</font></b>(pcreErrorStr != NULL) {
+    printf(<b><font color="#BC8F8F">"ERROR: Could not study '%s': %s\n"</font></b>, aStrRegex, pcreErrorStr);
+    exit(1);
+  } <i><font color="#B22222">/* end if */</font></i>
+
+  <b><font color="#A020F0">for</font></b>(aLineToMatch=testStrings; *aLineToMatch != NULL; aLineToMatch++) {
+    printf(<b><font color="#BC8F8F">"String: %s\n"</font></b>, *aLineToMatch);
+    printf(<b><font color="#BC8F8F">"        %s\n"</font></b>, <b><font color="#BC8F8F">"0123456789012345678901234567890123456789"</font></b>);
+    printf(<b><font color="#BC8F8F">"        %s\n"</font></b>, <b><font color="#BC8F8F">"0         1         2         3"</font></b>);
+
+    <i><font color="#B22222">/* Try to find the regex in aLineToMatch, and report results. */</font></i>
+    pcreExecRet = pcre_exec(reCompiled,
+                            pcreExtra,
+                            *aLineToMatch, 
+                            strlen(*aLineToMatch),  <i><font color="#B22222">// length of string
+</font></i>                            0,                      <i><font color="#B22222">// Start looking at this point
+</font></i>                            0,                      <i><font color="#B22222">// OPTIONS
+</font></i>                            subStrVec,
+                            30);                    <i><font color="#B22222">// Length of subStrVec
+</font></i>
+    <i><font color="#B22222">/* pcre_exec OPTIONS (||'ed together) can be:
+       PCRE_ANCHORED -- can be turned on at this time.
+       PCRE_NOTBOL
+       PCRE_NOTEOL
+       PCRE_NOTEMPTY */</font></i>
+
+    <i><font color="#B22222">// Report what happened in the pcre_exec call..
+</font></i>    <i><font color="#B22222">//printf("pcre_exec return: %d\n", pcreExecRet);
+</font></i>    <b><font color="#A020F0">if</font></b>(pcreExecRet &lt; 0) { <i><font color="#B22222">// Something bad happened..
+</font></i>      <b><font color="#A020F0">switch</font></b>(pcreExecRet) {
+      <b><font color="#A020F0">case</font></b> <b><font color="#5F9EA0">PCRE_ERROR_NOMATCH</font></b>      : printf(<b><font color="#BC8F8F">"String did not match the pattern\n"</font></b>);        <b><font color="#A020F0">break</font></b>;
+      <b><font color="#A020F0">case</font></b> <b><font color="#5F9EA0">PCRE_ERROR_NULL</font></b>         : printf(<b><font color="#BC8F8F">"Something was null\n"</font></b>);                      <b><font color="#A020F0">break</font></b>;
+      <b><font color="#A020F0">case</font></b> <b><font color="#5F9EA0">PCRE_ERROR_BADOPTION</font></b>    : printf(<b><font color="#BC8F8F">"A bad option was passed\n"</font></b>);                 <b><font color="#A020F0">break</font></b>;
+      <b><font color="#A020F0">case</font></b> <b><font color="#5F9EA0">PCRE_ERROR_BADMAGIC</font></b>     : printf(<b><font color="#BC8F8F">"Magic number bad (compiled re corrupt?)\n"</font></b>); <b><font color="#A020F0">break</font></b>;
+      <b><font color="#A020F0">case</font></b> <b><font color="#5F9EA0">PCRE_ERROR_UNKNOWN_NODE</font></b> : printf(<b><font color="#BC8F8F">"Something kooky in the compiled re\n"</font></b>);      <b><font color="#A020F0">break</font></b>;
+      <b><font color="#A020F0">case</font></b> <b><font color="#5F9EA0">PCRE_ERROR_NOMEMORY</font></b>     : printf(<b><font color="#BC8F8F">"Ran out of memory\n"</font></b>);                       <b><font color="#A020F0">break</font></b>;
+      <b><font color="#A020F0">default</font></b>                      : printf(<b><font color="#BC8F8F">"Unknown error\n"</font></b>);                           <b><font color="#A020F0">break</font></b>;
+      } <i><font color="#B22222">/* end switch */</font></i>
+    } <b><font color="#A020F0">else</font></b> {
+      printf(<b><font color="#BC8F8F">"Result: We have a match!\n"</font></b>);
+        
+      <i><font color="#B22222">// At this point, rc contains the number of substring matches found...
+</font></i>      <b><font color="#A020F0">if</font></b>(pcreExecRet == 0) {
+        printf(<b><font color="#BC8F8F">"But too many substrings were found to fit in subStrVec!\n"</font></b>);
+        <i><font color="#B22222">// Set rc to the max number of substring matches possible.
+</font></i>        pcreExecRet = 30 / 3;
+      } <i><font color="#B22222">/* end if */</font></i>
+
+      <i><font color="#B22222">// Do it yourself way to get the first substring match (whole pattern):
+</font></i>      <i><font color="#B22222">// char subStrMatchStr[1024];
+</font></i>      <i><font color="#B22222">// int i, j
+</font></i>      <i><font color="#B22222">// for(j=0,i=subStrVec[0];i&lt;subStrVec[1];i++,j++) 
+</font></i>      <i><font color="#B22222">//   subStrMatchStr[j] = (*aLineToMatch)[i];
+</font></i>      <i><font color="#B22222">// subStrMatchStr[subStrVec[1]-subStrVec[0]] = 0;
+</font></i>      <i><font color="#B22222">//printf("MATCHED SUBSTRING: '%s'\n", subStrMatchStr);
+</font></i>        
+      <i><font color="#B22222">// PCRE contains a handy function to do the above for you:
+</font></i>      <b><font color="#A020F0">for</font></b>(j=0; j&lt;pcreExecRet; j++) {
+        pcre_get_substring(*aLineToMatch, subStrVec, pcreExecRet, j, &amp;(psubStrMatchStr));
+        printf(<b><font color="#BC8F8F">"Match(%2d/%2d): (%2d,%2d): '%s'\n"</font></b>, j, pcreExecRet-1, subStrVec[j*2], subStrVec[j*2+1], psubStrMatchStr);
+      } <i><font color="#B22222">/* end for */</font></i>
+        
+      <i><font color="#B22222">// Free up the substring
+</font></i>      pcre_free_substring(psubStrMatchStr);
+    }  <i><font color="#B22222">/* end if/else */</font></i>
+    printf(<b><font color="#BC8F8F">"\n"</font></b>);
+      
+  } <i><font color="#B22222">/* end for */</font></i>
+  
+  <i><font color="#B22222">// Free up the regular expression.
+</font></i>  pcre_free(reCompiled);
+      
+  <i><font color="#B22222">// Free up the EXTRA PCRE value (may be NULL at this point)
+</font></i>  <b><font color="#A020F0">if</font></b>(pcreExtra != NULL)
+    pcre_free(pcreExtra);
+
+  <i><font color="#B22222">// We are all done..
+</font></i>  <b><font color="#A020F0">return</font></b> 0;
+
+} <i><font color="#B22222">/* end func main */</font></i>
+</pre>
+<hr \="">
+<address>Generated by <a href="http://www.iki.fi/~mtr/genscript/">GNU Enscript 1.6.5.2</a>.</address>
+
+
+</body></html>
